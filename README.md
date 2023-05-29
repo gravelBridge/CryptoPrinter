@@ -55,7 +55,7 @@ The bot uses TOTP for 2FA with Robinhood. Here's how to set it up:
 
 ## 🏃‍♀️ Running the Bot
 
-To run the bot, simply run the Python script. The bot will start trading cryptocurrencies based on advice from the GPT-4 model. The bot will execute a trade every hour.
+To run the bot, simply run the Python script. The bot will start trading cryptocurrencies based on advice from the GPT-4 model. The bot will execute a trade every 30 minutes.
 
 ## ⚠️ Disclaimer
 
