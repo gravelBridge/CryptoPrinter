@@ -12,7 +12,7 @@ totp  = pyotp.TOTP(os.getenv("TOTP")).now()
 login = rh.login(os.getenv("ROBINHOOD_EMAIL"), os.getenv("ROBINHOOD_PASSWORD"), mfa_code=totp)
 symbols = ["BTC", "ETH", "BNB", "XRP", "ADA"]
 
-PROMPT_FOR_AI = """
+PROMPT_FOR_AI = f"""
 You are in control of my crypto trading profile. You should take into consideration the factors you have to determine the best trade. Here is the info:
 
 You can execute these commands:
@@ -33,8 +33,27 @@ You also have access to these data:
 5. Historical Data (begins_at, open_price, close_price, high_price, low_price, volume)
 6. News Headlines
 
+The current date and time is {datetime.now().isoformat()}
+
+You are called once every 30 minutes, keep this in mind.
+
 The only cryptos you can trade are BTC, ETH, BNB, XRP and ADA.
 """
+
+past_trades = []
+
+def record_trade(action, symbol, amount, limit=None):
+    trade_info = {
+        "action": action,
+        "symbol": symbol,
+        "amount": amount,
+        "time": datetime.now().isoformat(),
+    }
+    if limit is not None:
+        trade_info["limit"] = limit
+    past_trades.append(trade_info)
+    if len(past_trades) > 10:  # keep only the last 10 trades
+        past_trades.pop(0)
 
 def get_crypto_infos():
     infos = {}
@@ -58,23 +77,27 @@ def get_balance():
 def buy_crypto_price(symbol, amount):
     amount = float(amount)
     res = rh.order_buy_crypto_by_price(symbol, amount)
+    record_trade("buy_crypto_price", symbol, amount)
     print(res)
 
 def buy_crypto_limit(symbol, amount, limit):
     amount = float(amount)
     limit = float(limit)
     res = rh.order_buy_crypto_limit_by_price(symbol, amount, limit)
+    record_trade("buy_crypto_limit", symbol, amount, limit)
     print(res)
 
 def sell_crypto_price(symbol, amount):
     amount = float(amount)
     res = rh.order_sell_crypto_by_price(symbol, amount)
+    record_trade("sell_crypto_price", symbol, amount)
     print(res)
 
 def sell_crypto_limit(symbol, amount, limit):
     amount = float(amount)
     limit = float(limit)
     res = rh.order_sell_crypto_limit_by_price(symbol, amount, limit)
+    record_trade("sell_crypto_limit", symbol, amount, limit)
     print(res)
 
 def get_open_orders():
@@ -159,12 +182,15 @@ def get_all_crypto_news():
         data = response.json()
         
         news_data = []
-        for article in data['articles'][:3]:  # Limit to top 3 articles
-            news_data.append({
-                'title': article['title'],
-                'source': article['source']['name'],
-            })
-        all_news[symbol] = news_data
+        try:
+            for article in data['articles'][:3]:  # Limit to top 3 articles
+                news_data.append({
+                    'title': article['title'],
+                    'source': article['source']['name'],
+                })
+            all_news[symbol] = news_data
+        except:
+            return all_news
 
     return all_news
 
@@ -175,9 +201,10 @@ def get_trade_advice():
     positions = get_positions()
     news = get_all_crypto_news()
     open_orders = get_open_orders()
+    past_trade_info = '\n'.join([str(trade) for trade in past_trades])
 
     # Convert the info into a format suitable for the AI prompt
-    info_str = f"Crypto Info: {crypto_info}\nBalance: {balance}\nPositions: {positions}\nNews: {news}\nOpen Orders: {open_orders}"
+    info_str = f"Crypto Info: {crypto_info}\nBalance: {balance}\nPositions: {positions}\nNews: {news}\nOpen Orders: {open_orders}\nPast Trades: {past_trade_info}"
     prompt = PROMPT_FOR_AI + "\n\n" + info_str
     user_prompt = """
 What should we do to make the most amount of profit based on the info?
@@ -235,4 +262,4 @@ def execute_response(response):
 
 while True:
     execute_response(get_trade_advice())
-    time.sleep(3600)
+    time.sleep(1800)
