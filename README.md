@@ -60,3 +60,5 @@ To run the bot, simply run the Python script. The bot will start trading cryptoc
 ## ⚠️ Disclaimer
 
 This bot is for educational purposes only. Use it at your own risk. Cryptocurrency trading involves financial risk, and you should only trade with money you can afford to lose.
+
+Please leave a star on this repo! ❤️
